@@ -67,8 +67,9 @@ public class ParseInput {
 			data = parseLine2IntArr(content[i+start]);
 			consumeNet.add(new ConsumeNode(data[0], data[1], data[2]));
 		}
-		
+		consumeNet.trimToSize();
 		Collections.sort(consumeNet);
+		
 	}
 	
 	

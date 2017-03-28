@@ -16,6 +16,13 @@ public class Graph {
 		}
 	}
 	
+	public Vertex getVertex(final int vertexIndex){
+		if(vertexIndex>=0 && vertexIndex<linkTables.length)
+			return linkTables[vertexIndex].getStartVertex();
+		else
+			return null;
+	}
+	
 	public void addEdge(Vertex startVertex, Edge edge){
 		linkTables[startVertex.index].getAdjEdges().add(edge);
 		
@@ -38,13 +45,6 @@ public class Graph {
 		return linkTables[vertex.index].getAdjEdges().size();
 	}
 	
-	public Edge getFirstEdge(Vertex vertex){
-		LinkedList<Edge> edges = linkTables[vertex.index].getAdjEdges();
-		if(edges.size()>0)
-			return edges.get(0);
-		else
-			return null;
-	}
 	
 	
 	public LinkTable getLinkTable(int index){

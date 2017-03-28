@@ -1,9 +1,9 @@
 package com.cacheserverdeploy.deploy;
 
 public class ConsumeNode implements Comparable<ConsumeNode> {
-	public final int consumeIndex;
-	public final int linknetIndex;
-	public final int bandwidthNeed;
+	public final int consumeIndex;  //消费节点索引
+	public final int linknetIndex;  //与消费节点相连的网络节点
+	public final int bandwidthNeed; //带宽需求
 	
 	public ConsumeNode(int consumeIndex, int linknetIndex, int bandwidthNeed) {
 		// TODO Auto-generated constructor stub
@@ -14,7 +14,7 @@ public class ConsumeNode implements Comparable<ConsumeNode> {
 	
 	@Override
 	public int compareTo(ConsumeNode o) {
-		// TODO Auto-generated method stub
+		// 按照带宽降序对消费节点进行排序
 		return o.bandwidthNeed - bandwidthNeed;
 	}
 	

@@ -1,7 +1,6 @@
 package com.cacheserverdeploy.deploy;
 
 import java.util.*;
-
 import com.filetool.util.FileUtil;
 
 
@@ -9,6 +8,7 @@ import com.filetool.util.FileUtil;
 public class Deploy
 {
 
+	public static ParseInput parseInput;
 
 	/**
      * 你需要完成的入口
@@ -21,7 +21,7 @@ public class Deploy
     {
         /**do your work here**/
     	
-    	ParseInput parseInput = new ParseInput(graphContent);
+    	parseInput = new ParseInput(graphContent);
     	
     	
     	
