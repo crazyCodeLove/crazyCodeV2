@@ -2,6 +2,8 @@ package com.cacheserverdeploy.deploy;
 
 import java.util.*;
 
+import com.filetool.util.FileUtil;
+
 /*
  * 生成图的信息
  * 包含
@@ -41,16 +43,43 @@ public class Graph {
 		
 	}
 	
-	public int getEdgeNums(Vertex vertex){
+	public int getEdgeSize(Vertex vertex){
 		return linkTables[vertex.index].getAdjEdges().size();
 	}
 	
-	
-	
-	public LinkTable getLinkTable(int index){
-		if(index<0 || index>linkTables.length)
+	public Edge getEdge(final int startVertexIndex, final int endVertexIndex){
+		if(startVertexIndex<0 || startVertexIndex>=linkTables.length)
 			return null;
-		return linkTables[index];
+		return linkTables[startVertexIndex].getEdge(endVertexIndex);
+				
+	}
+	
+	public LinkTable getLinkTable(int vertexIndex){
+		if(vertexIndex<0 || vertexIndex>=linkTables.length)
+			return null;
+		return linkTables[vertexIndex];
+	}
+	
+	public LinkedList<Edge> getAdjEdges(final int vertexIndex) {
+		if(vertexIndex<0 || vertexIndex>=linkTables.length)
+			return null;
+		return linkTables[vertexIndex].getAdjEdges();
+	}
+	
+	public LinkedList<Edge> getAdjEdges(Vertex vertex) {
+		return linkTables[vertex.index].getAdjEdges();
+	}
+	
+	public void cutdownBandwidth(
+			final int startVertexIndex, final int endVertexIndex, final int bandwidth){
+		Edge edge = getEdge(startVertexIndex, endVertexIndex);
+		edge.cutdownBandwidth(bandwidth);
+	}
+	
+	public void addBandwidth(
+			final int startVertexIndex, final int endVertexIndex, final int bandwidth){
+		Edge edge = getEdge(startVertexIndex, endVertexIndex);
+		edge.addBandwidth(bandwidth);
 	}
 
 	public void showGraphGFS(){
@@ -85,6 +114,13 @@ public class Graph {
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
+		
+		String[] filename = {"D:\\chengxu\\java_program\\case_example\\case0.txt"};
+    	String[] graphContent = FileUtil.read(filename[0], null);
+    	ParseInput parseInput = new ParseInput(graphContent);
+    	Vertex vertex = parseInput.getLinkNetGraph().getVertex(38);
+    	System.out.println(vertex.index);
+    	
 
 	}
 

@@ -78,5 +78,9 @@ public class Node{
 		return vertex;
 	}
 	
+	public int getVertexIndex(){
+		return vertex.index;
+	}
+	
 	
 }

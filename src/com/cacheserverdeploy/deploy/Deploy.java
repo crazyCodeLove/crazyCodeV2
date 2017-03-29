@@ -23,7 +23,7 @@ public class Deploy
     	
     	parseInput = new ParseInput(graphContent);
     	
-    	
+    	SearchTreeSL.deploySLTree();
     	
     	List<String> result = new LinkedList<>();
     	result.add(0, String.valueOf(result.size()));

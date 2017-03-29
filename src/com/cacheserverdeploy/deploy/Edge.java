@@ -21,6 +21,21 @@ public class Edge {
 		// TODO Auto-generated method stub
 
 	}
+	
+	public void cutdownBandwidth(final int bandwidth){
+		if (bandwidth <= this.bandwidth) {
+			this.bandwidth -= bandwidth;
+		} else {
+			throw new RuntimeException("bandwidth not enough");
+		}
+	}
+	
+	public void addBandwidth(int bandwidth) {
+		if (bandwidth<0) {
+			throw new RuntimeException("add bandwidth is negative.");
+		}
+		this.bandwidth += bandwidth;
+	}
 
 	public Vertex getEndVertex() {
 		return endVertex;
