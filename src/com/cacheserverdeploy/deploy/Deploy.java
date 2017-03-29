@@ -23,9 +23,8 @@ public class Deploy
     	
     	parseInput = new ParseInput(graphContent);
     	
-    	SearchTreeSL.deploySLTree();
+    	List<String> result = SearchTreeSL.deploySLTree();
     	
-    	List<String> result = new LinkedList<>();
     	result.add(0, String.valueOf(result.size()));
     	result.add(1, "");
     	
@@ -39,7 +38,7 @@ public class Deploy
     public static void main(String[] args){
     	
     	long start = System.currentTimeMillis();
-    	String[] filename = {"D:\\chengxu\\java_program\\case_example\\case0.txt"};
+    	String[] filename = {"D:\\chengxu\\java_program\\case_example\\level0\\case0.txt"};
     	String[] contents = FileUtil.read(filename[0], null);
     	
     	String[] result = deployServer(contents);

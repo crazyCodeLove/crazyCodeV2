@@ -5,7 +5,9 @@ import java.util.*;
 public class SearchTreeSL {
 	/*
 	 * 一条链路可以满足带宽需求,SL(single line)
-	 */
+	 */	 
+	
+	
 	private static Graph linkNetGraph = Deploy.parseInput.getLinkNetGraph();
 	private static final int serverCost = Deploy.parseInput.getServerCost();
 	private static ArrayList<ConsumeNode> consumeNet = Deploy.parseInput.getConsumeNet();
@@ -14,6 +16,8 @@ public class SearchTreeSL {
 	
 	// 与该树相连的消费节点
 	private ConsumeNode consumeNode;
+	private ArrayDeque<Vertex> path;
+	private ArrayList<Node> treeNodes;
 	
 	
 	public SearchTreeSL(ConsumeNode consumeNode){
@@ -22,25 +26,29 @@ public class SearchTreeSL {
 		Vertex t = linkNetGraph.getVertex((consumeNode.linknetIndex));
 		root = new Node(t);
 		t.setVisited(true);
-		
+		treeNodes = new ArrayList<>();
+		treeNodes.add(root);
 	}
 	
-	public void showTreeDFS(){
-		/**深度优先显示树**/
+	public void TreeDFS(TreeStructure treeObj){
+		/**深度优先遍历树**/
 		Node pointer = root;
 		ArrayDeque<Node> nodeStack = new ArrayDeque<>();
 		
 		while(pointer!=null || !(nodeStack.isEmpty())){
 			if(pointer!=null){
-				System.out.print(pointer.getVertexIndex() + " ");
+				treeObj.visitNode(pointer);
 				nodeStack.push(pointer);
 				pointer = pointer.getFirstChild();
 			} else {
-				pointer = nodeStack.pop().getNextSlibing();				
+				pointer = nodeStack.pop().getNextSlibing();
 			}
 		}
 		
 	}
+	
+	
+	
 	
 	public void searchTreeHelper(Node root,HashMap<Integer, Node> candidateMap){
 		// 构造搜索树
@@ -51,28 +59,13 @@ public class SearchTreeSL {
 			newNode = selectCandidateIndexAndUpdateTree(candidateMap);
 			if (newNode != null) {
 				updateJobAfterTreeAddNode(newNode, candidateMap);
+				
 				parent = newNode;
 				getAndUpdateCandidateMap(parent, candidateMap);
 			}
 			
 		} while (!candidateMap.isEmpty());
 		
-	}
-	
-	public void clearVisited(){
-		/**深度优先清除树的访问节点**/
-		Node pointer = root;
-		ArrayDeque<Node> nodeStack = new ArrayDeque<>();
-		
-		while(pointer!=null || !(nodeStack.isEmpty())){
-			if(pointer!=null){
-				pointer.getVertex().clearVisited();
-				nodeStack.push(pointer);
-				pointer = pointer.getFirstChild();
-			} else {
-				pointer = nodeStack.pop().getNextSlibing();				
-			}
-		}
 	}
 	
 	public void getAndUpdateCandidateMap(Node root, HashMap<Integer, Node> candidateMap) {
@@ -130,11 +123,13 @@ public class SearchTreeSL {
 	}
 	
 	public void updateJobAfterTreeAddNode(Node newNode, HashMap<Integer, Node> candidateMap) {
+		//添加该节点到treeNodes
 		//去除所有可选节点为上一次添加的新节点
 		//新节点index添加进treeindexs
 		//更新linknet带宽
 		//cost(12 bit)/parentIndex(10 bit)/candidateIndex(10 bit)
 		Iterator<Map.Entry<Integer, Node>> iterator = candidateMap.entrySet().iterator();
+		treeNodes.add(newNode);
 		int newindex = newNode.getVertexIndex();
 		int parentindex = newNode.getParent().getVertexIndex();
 		int candidateindex=0;
@@ -151,13 +146,30 @@ public class SearchTreeSL {
 	public Node getRoot() {
 		return root;
 	}
+	
+	public ArrayList<Node> getTreeNodes() {
+		return treeNodes;
+	}
+	
+
+	@Override
+	public int hashCode() {
+		// TODO Auto-generated method stub
+		return root.getVertexIndex();
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		// TODO Auto-generated method stub
+		return root.getVertexIndex() == ((SearchTreeSL)obj).getRoot().getVertexIndex();
+	}
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 
 	}
 	
-	public static void deploySLTree(){
+	public static ArrayList<String> deploySLTree(){
 		ArrayList<SearchTreeSL> allSLTree = new ArrayList<>();
 		SearchTreeSL tTree ;
 		Iterator<ConsumeNode> iterator = consumeNet.iterator();
@@ -166,12 +178,201 @@ public class SearchTreeSL {
 			consumeNode = iterator.next();
 			tTree = new SearchTreeSL(consumeNode);
 			tTree.searchTreeHelper(tTree.getRoot(), new HashMap<Integer,Node>());
+			tTree.TreeDFS(new TreeClearVisited());
 			
-			tTree.clearVisited();
+//			tTree.TreeDFS(new TreeShow());
+//			System.out.println();
+			allSLTree.add(tTree);
 			
-			tTree.showTreeDFS();
-			System.out.println();
 		}
+		allSLTree.trimToSize();
+		
+		return allTrees22Part(allSLTree);
+	}
+	
+	public static ArrayList<String> allTrees22Part(ArrayList<SearchTreeSL> allTrees) {
+		//将所有树分成两部分，一部分可以优化，一部分不可以优化
+		ArrayList<String> result = new ArrayList<String>();
+		
+		// canoptimizeTree 统计每颗树可以在哪些节点上部署,{节点index:树...,};记录可以优化的树
+		HashMap<Integer, LinkedList<SearchTreeSL>> canOptimizeTree = new HashMap<Integer, LinkedList<SearchTreeSL>>();
+		
+		//保存最优的服务器index和对应的树列表
+		HashMap<Integer, LinkedList<SearchTreeSL>> resultTreeIndexMap = new HashMap<Integer, LinkedList<SearchTreeSL>>();
+		calculateTreeIndex(allTrees, canOptimizeTree);
+		
+		//noOptimizeTree 保存没有交点的树
+		HashSet<SearchTreeSL> noOptimizeTree = new HashSet<SearchTreeSL>();
+		int minIndex=0;
+		LinkedList<SearchTreeSL> optimizeTreeList;
+		
+		Integer[] sortedindexAndTreeInfo = getSortedIndexAndTreeInfo(noOptimizeTree, canOptimizeTree);		
+		do  {
+			// Integer(32): 该节点树的个数(16 bit) 该节点的索引index(16 bit)
+			minIndex=getMinCostIndex(sortedindexAndTreeInfo, canOptimizeTree);
+			optimizeTreeList = canOptimizeTree.get(minIndex);
+			resultTreeIndexMap.put(minIndex, optimizeTreeList);
+			canOptimizeTree.remove(minIndex);
+			removeMinCostTrees(optimizeTreeList, canOptimizeTree, noOptimizeTree);
+			sortedindexAndTreeInfo = getSortedIndexAndTreeInfo(noOptimizeTree, canOptimizeTree);
+		} while (!canOptimizeTree.isEmpty());
+		
+		
+		fillResult(result, noOptimizeTree, resultTreeIndexMap);
+		
+		
+		return result;
+		
+	}
+	
+	public static void calculateTreeIndex(
+			ArrayList<SearchTreeSL> allTrees, HashMap<Integer, LinkedList<SearchTreeSL>> canoptimizeTree) {
+		// canoptimizeTree 统计每颗树可以在哪些节点上部署,{节点Node:树...,};记录可以优化的树
+		//遍历树
+		Iterator<SearchTreeSL> iterator = allTrees.iterator();
+		SearchTreeSL tSLTree;
+		
+		while (iterator.hasNext()) {
+			tSLTree = iterator.next();
+			//遍历树上的节点
+			
+			Node pointer = tSLTree.getRoot();
+			ArrayDeque<Node> nodeStack = new ArrayDeque<>();
+			
+			while(pointer!=null || !(nodeStack.isEmpty())){
+				if(pointer!=null){
+					/**深度优先遍历树，访问代码在此处**/
+					if(canoptimizeTree.keySet().contains(pointer.getVertexIndex())){
+						canoptimizeTree.get(pointer.getVertexIndex()).add(tSLTree);
+						
+					}else{
+						LinkedList<SearchTreeSL> treelist = new LinkedList<SearchTreeSL>();
+						treelist.add(tSLTree);
+						canoptimizeTree.put(pointer.getVertexIndex(), treelist);
+					}
+					
+					nodeStack.push(pointer);
+					pointer = pointer.getFirstChild();
+				} else {
+					pointer = nodeStack.pop().getNextSlibing();				
+				}
+			}
+			
+		}
+		//遍历树结束
+		
+	}
+	
+	public static Integer[] getSortedIndexAndTreeInfo(
+			HashSet<SearchTreeSL> noOptimizeTree, HashMap<Integer, LinkedList<SearchTreeSL>> canoptimizeTree) {
+		// 将canoptimizeTree集合中, 节点上tree的数量 >= 2的加进 canoptimizeTree, 否则加进 noOptimizeTree,处理的时候优先处理canoptimizeTree
+		// 所有可以优化的树处理完以后，从集合noOptimizeTree 去除 canoptimizeTree
+		// Integer(32): 该节点树的个数(16 bit) 该节点的索引index(16 bit)
+		LinkedList<Integer> indexAndTreeInfo = new LinkedList<Integer>();
+		Iterator<Map.Entry<Integer, LinkedList<SearchTreeSL>>> iterator = canoptimizeTree.entrySet().iterator();
+		Map.Entry<Integer, LinkedList<SearchTreeSL>> tEntry;
+		
+		int size ;
+		while (iterator.hasNext()) {
+			tEntry = iterator.next();
+			size = tEntry.getValue().size();
+			if (size<2) {
+				noOptimizeTree.addAll(tEntry.getValue());
+				iterator.remove();
+			} else {
+				indexAndTreeInfo.add(((size<<16) + tEntry.getKey()));				
+			}
+			
+		}
+		Integer[] sortedindexAndTreeInfo = indexAndTreeInfo.toArray(new Integer[0]);
+		Arrays.sort(sortedindexAndTreeInfo);
+		
+		return sortedindexAndTreeInfo;
+	}
+	
+	public static int getMinCostIndex(
+			Integer[] sortedindexAndTreeInfo, HashMap<Integer, LinkedList<SearchTreeSL>> canoptimizeTree) {
+		//获取相交节点最多，连接成本最小的，节点索引index
+		int index=0,minindex=0,cost,mincost = Integer.MAX_VALUE;
+		
+		// Integer(32): 该节点树的个数(16 bit)-该节点的索引index(16 bit)
+		int length= sortedindexAndTreeInfo.length;
+		final int maxnum = sortedindexAndTreeInfo[length-1] >>> 16;
+		for(int i=length-1;i >=0 && maxnum == (sortedindexAndTreeInfo[i] >>> 16); i--){
+			index = (sortedindexAndTreeInfo[i]<<16)>>>16;
+			cost = getLinkCostByTrees(index, canoptimizeTree.get(index));
+			if (cost < mincost) {
+				mincost = cost;
+				minindex = index;
+			}
+		}
+		
+		return minindex;
+	}
+	
+	public static int getLinkCostByTrees(int nodeIndex, LinkedList<SearchTreeSL> trees) {
+		int sum=0;
+		Iterator<SearchTreeSL> iterator = trees.iterator();
+		SearchTreeSL tTree;
+		ArrayList<Node> treeindexs;
+		while (iterator.hasNext()) {
+			tTree = iterator.next();
+			treeindexs = tTree.getTreeNodes();
+			int percost = treeindexs.get(treeindexs.indexOf(new Node(linkNetGraph.getVertex(nodeIndex)))).getCost();
+			sum += tTree.consumeNode.bandwidthNeed * percost;
+			
+		}
+		return sum;
 	}
 
+	public static void removeMinCostTrees(
+			LinkedList<SearchTreeSL> optimizeTrees, 
+			HashMap<Integer, LinkedList<SearchTreeSL>> canOptimizeTree,
+			HashSet<SearchTreeSL> noOptimizeTree) {
+		// 将optimizeTrees从canOptimizeTree中全部移除
+		LinkedList<SearchTreeSL> tSearchTreeSLs;
+		for(int i: canOptimizeTree.keySet()){
+			tSearchTreeSLs = canOptimizeTree.get(i);
+			tSearchTreeSLs.removeAll(optimizeTrees);
+			canOptimizeTree.put(i, tSearchTreeSLs);//将删除过后的{Integer:LinkedList<SearchTreeSL>}覆盖掉以前的键值对
+		}
+		noOptimizeTree.removeAll(optimizeTrees);
+		
+	}
+	
+	public static void fillResult(
+			ArrayList<String> result, HashSet<SearchTreeSL> noOptimizeTree, 
+			HashMap<Integer, LinkedList<SearchTreeSL>> resultTreeIndexMap) {
+		
+		Iterator<SearchTreeSL> iterator = noOptimizeTree.iterator();
+		SearchTreeSL treev2;
+		while (iterator.hasNext()) {
+			treev2 = iterator.next();
+			result.add(getPathFromIndex(treev2.getRoot().getVertexIndex(), treev2));
+		}
+		
+		for(int i: resultTreeIndexMap.keySet()){
+			iterator = resultTreeIndexMap.get(i).iterator();
+			while (iterator.hasNext()) {
+				treev2 = iterator.next();
+				result.add(getPathFromIndex(i, treev2));
+			}
+		}
+	
+	}
+	
+	public static String getPathFromIndex(int index, SearchTreeSL tree) {
+		StringBuilder sb = new StringBuilder();
+		Node t = new Node(linkNetGraph.getVertex(index));
+		t = tree.getTreeNodes().get(tree.getTreeNodes().indexOf(t));
+		while (t!= null) {
+			sb.append(t.getVertexIndex() + " ");
+			t = t.getParent();
+		}
+		sb.append(tree.consumeNode.consumeIndex + " " + tree.consumeNode.bandwidthNeed);		
+		return sb.toString();
+		
+	}
+	
+	
 }
