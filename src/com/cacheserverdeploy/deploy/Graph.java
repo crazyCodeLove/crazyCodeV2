@@ -54,6 +54,10 @@ public class Graph {
 				
 	}
 	
+	public int getEdgeRentCost(final int startVertexIndex, final int endVertexIndex){
+		return getEdge(startVertexIndex, endVertexIndex).getRentcost();
+	}
+	
 	public LinkTable getLinkTable(int vertexIndex){
 		if(vertexIndex<0 || vertexIndex>=linkTables.length)
 			return null;
