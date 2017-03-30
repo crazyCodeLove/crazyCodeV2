@@ -16,7 +16,6 @@ public class SearchTreeSL {
 	
 	// 与该树相连的消费节点
 	private ConsumeNode consumeNode;
-	private ArrayDeque<Vertex> path;
 	private ArrayList<Node> treeNodes;
 	
 	
@@ -46,8 +45,7 @@ public class SearchTreeSL {
 		}
 		
 	}
-	
-	
+
 	
 	
 	public void searchTreeHelper(Node root,HashMap<Integer, Node> candidateMap){
@@ -268,11 +266,13 @@ public class SearchTreeSL {
 		// 将canoptimizeTree集合中, 节点上tree的数量 >= 2的加进 canoptimizeTree, 否则加进 noOptimizeTree,处理的时候优先处理canoptimizeTree
 		// 所有可以优化的树处理完以后，从集合noOptimizeTree 去除 canoptimizeTree
 		// Integer(32): 该节点树的个数(16 bit) 该节点的索引index(16 bit)
+		// maxConsume 服务器部署在该节点可以提供最多的消费节点数
 		LinkedList<Integer> indexAndTreeInfo = new LinkedList<Integer>();
 		Iterator<Map.Entry<Integer, LinkedList<SearchTreeSL>>> iterator = canoptimizeTree.entrySet().iterator();
 		Map.Entry<Integer, LinkedList<SearchTreeSL>> tEntry;
 		
 		int size ;
+		int maxConsumeCount = -1;
 		while (iterator.hasNext()) {
 			tEntry = iterator.next();
 			size = tEntry.getValue().size();
@@ -280,7 +280,13 @@ public class SearchTreeSL {
 				noOptimizeTree.addAll(tEntry.getValue());
 				iterator.remove();
 			} else {
-				indexAndTreeInfo.add(((size<<16) + tEntry.getKey()));				
+				if(size>maxConsumeCount){
+					maxConsumeCount = size;
+					indexAndTreeInfo.clear();
+					indexAndTreeInfo.add(((size<<16) + tEntry.getKey()));
+				} else if(size == maxConsumeCount){
+					indexAndTreeInfo.add(((size<<16) + tEntry.getKey()));
+				}
 			}
 			
 		}
@@ -297,8 +303,7 @@ public class SearchTreeSL {
 		
 		// Integer(32): 该节点树的个数(16 bit)-该节点的索引index(16 bit)
 		int length= sortedindexAndTreeInfo.length;
-		final int maxnum = sortedindexAndTreeInfo[length-1] >>> 16;
-		for(int i=length-1;i >=0 && maxnum == (sortedindexAndTreeInfo[i] >>> 16); i--){
+		for(int i=length-1;i >=0 ; i--){
 			index = (sortedindexAndTreeInfo[i]<<16)>>>16;
 			cost = getLinkCostByTrees(index, canoptimizeTree.get(index));
 			if (cost < mincost) {
