@@ -52,8 +52,8 @@ public class ParseInput {
 			data = parseLine2IntArr(content[i+4]);
 			linkNetGraph.addEdge(data[0], data[1], data[2], data[3]);
 			linkNetGraph.addEdge(data[1], data[0], data[2], data[3]);
-		}		
-		
+		}
+	
 	}
 	
 	private void parseConsumeNet(){

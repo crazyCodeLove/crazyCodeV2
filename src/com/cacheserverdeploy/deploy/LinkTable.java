@@ -55,6 +55,8 @@ public class LinkTable {
 	public LinkedList<Edge> getAdjEdges() {
 		return adjEdges;
 	}
+	
+	
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub

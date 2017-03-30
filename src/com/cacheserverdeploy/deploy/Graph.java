@@ -70,6 +70,10 @@ public class Graph {
 		return linkTables[vertex.index].getAdjEdges();
 	}
 	
+	public int getBandwidth(final int startVertexIndex, final int endVertexIndex){
+		return getEdge(startVertexIndex, endVertexIndex).getBandwidth();
+	}
+	
 	public void cutdownBandwidth(
 			final int startVertexIndex, final int endVertexIndex, final int bandwidth){
 		Edge edge = getEdge(startVertexIndex, endVertexIndex);
@@ -82,14 +86,13 @@ public class Graph {
 		edge.addBandwidth(bandwidth);
 	}
 
-	public void showGraphGFS(){
+	public void showGraphBFS(){
 		/**打印图的节点标号，按照广度优先策略**/
 		ArrayDeque<Vertex> vertexQue = new ArrayDeque<>();
 		if(linkTables.length>0){
 			Vertex vertex=linkTables[0].getStartVertex();
 			vertex.setVisited(true);
-			vertexQue.addLast(vertex);
-			
+			vertexQue.addLast(vertex);	
 			
 			Edge edge;
 			while(!vertexQue.isEmpty()){
@@ -110,7 +113,65 @@ public class Graph {
 			}
 		}
 		
+		clearVertexVisited();
 	}
+	
+	public void clearVertexVisited(){
+		for(int i=0;i<linkTables.length;i++){
+			linkTables[i].getStartVertex().clearVisited();
+		}
+	}
+	
+	public void showGraphEdgeAllDirec(){
+		Iterator<Edge> iterator;
+		Edge edge;
+		Vertex vertex;
+		for(int i=0;i<linkTables.length;i++){
+			vertex = linkTables[i].getStartVertex();
+			iterator = linkTables[i].getAdjEdges().iterator();
+			while(iterator.hasNext()){
+				edge = iterator.next();
+				System.out.println(vertex.index + " " + edge.getEndVertex().index + " " + edge.getBandwidth());
+				
+			}
+		}
+	}
+	
+	public void showGraphEdge(){
+		/**打印图中所有链接的信息**/
+		Vertex vertex;
+		Iterator<Edge> iterator;
+		Edge edge;
+		for(int i=0;i<linkTables.length;i++){
+			vertex = linkTables[i].getStartVertex();
+			iterator = linkTables[i].getAdjEdges().iterator();
+			while(iterator.hasNext()){
+				edge = iterator.next();
+				if(!edge.isVisited()){
+					System.out.println(vertex.index + " " + edge.getEndVertex().index + " " + edge.getBandwidth());
+					edge.setVisited(true);
+					getEdge(edge.getEndVertex().index, vertex.index).setVisited(true);
+				}
+			
+			}
+		}
+		
+		clearEdgeVisited();
+	}
+	
+	public void clearEdgeVisited(){
+		Iterator<Edge> iterator;
+		Edge edge;
+		for(int i=0;i<linkTables.length;i++){
+			iterator = linkTables[i].getAdjEdges().iterator();
+			while(iterator.hasNext()){
+				edge = iterator.next();
+				edge.clearVisited();			
+				
+			}
+		}
+	}
+	
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
