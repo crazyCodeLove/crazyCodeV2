@@ -13,10 +13,11 @@ public class SearchTreeSL {
 	private static ArrayList<ConsumeNode> consumeNet = Deploy.parseInput.getConsumeNet();
 	
 	private Node root;
+	private Node serverNode;
+	
 	
 	// 与该树相连的消费节点
 	private ConsumeNode consumeNode;
-	private ArrayList<Node> treeNodes;
 	
 	
 	public SearchTreeSL(ConsumeNode consumeNode){
@@ -25,8 +26,7 @@ public class SearchTreeSL {
 		Vertex t = linkNetGraph.getVertex((consumeNode.linknetIndex));
 		root = new Node(t);
 		t.setVisited(true);
-		treeNodes = new ArrayList<>();
-		treeNodes.add(root);
+		
 	}
 	
 	public void TreeDFS(TreeStructure treeObj){
@@ -45,9 +45,33 @@ public class SearchTreeSL {
 		}
 		
 	}
+	
+	public Node getNode(final int index){
+		Node pointer = root;
+		ArrayDeque<Node> nodeStack = new ArrayDeque<>();
+		
+		while(pointer!=null || !(nodeStack.isEmpty())){
+			if(pointer!=null){
+				/**深度优先遍历树,访问代码放在此处**/
+				if(pointer.getVertexIndex() == index)
+					return pointer;
+				nodeStack.push(pointer);
+				pointer = pointer.getFirstChild();
+			} else {
+				pointer = nodeStack.pop().getNextSlibing();
+			}
+		}
+		return null;
+	}	
 
-	
-	
+	public Node getServerNode() {
+		return serverNode;
+	}
+
+	public void setServerNode(Node serverNode) {
+		this.serverNode = serverNode;
+	}
+
 	public void searchTreeHelper(Node root,HashMap<Integer, Node> candidateMap){
 		// 构造搜索树
 		Node parent = root, newNode;
@@ -127,7 +151,6 @@ public class SearchTreeSL {
 		//更新linknet带宽
 		//cost(12 bit)/parentIndex(10 bit)/candidateIndex(10 bit)
 		Iterator<Map.Entry<Integer, Node>> iterator = candidateMap.entrySet().iterator();
-		treeNodes.add(newNode);
 		int newindex = newNode.getVertexIndex();
 		int parentindex = newNode.getParent().getVertexIndex();
 		int candidateindex=0;
@@ -144,11 +167,6 @@ public class SearchTreeSL {
 	public Node getRoot() {
 		return root;
 	}
-	
-	public ArrayList<Node> getTreeNodes() {
-		return treeNodes;
-	}
-	
 
 	@Override
 	public int hashCode() {
@@ -266,7 +284,8 @@ public class SearchTreeSL {
 		// 将canoptimizeTree集合中, 节点上tree的数量 >= 2的加进 canoptimizeTree, 否则加进 noOptimizeTree,处理的时候优先处理canoptimizeTree
 		// 所有可以优化的树处理完以后，从集合noOptimizeTree 去除 canoptimizeTree
 		// Integer(32): 该节点树的个数(16 bit) 该节点的索引index(16 bit)
-		// maxConsume 服务器部署在该节点可以提供最多的消费节点数
+		// maxConsumeCount 服务器部署在该节点可以提供最多的消费节点数
+		// sortedindexAndTreeInfo 只记录可以提供最多消费节点的 链路网络节点的index
 		LinkedList<Integer> indexAndTreeInfo = new LinkedList<Integer>();
 		Iterator<Map.Entry<Integer, LinkedList<SearchTreeSL>>> iterator = canoptimizeTree.entrySet().iterator();
 		Map.Entry<Integer, LinkedList<SearchTreeSL>> tEntry;
@@ -283,15 +302,14 @@ public class SearchTreeSL {
 				if(size>maxConsumeCount){
 					maxConsumeCount = size;
 					indexAndTreeInfo.clear();
-					indexAndTreeInfo.add(((size<<16) + tEntry.getKey()));
+					indexAndTreeInfo.add( tEntry.getKey());
 				} else if(size == maxConsumeCount){
-					indexAndTreeInfo.add(((size<<16) + tEntry.getKey()));
+					indexAndTreeInfo.add( tEntry.getKey());
 				}
 			}
 			
 		}
 		Integer[] sortedindexAndTreeInfo = indexAndTreeInfo.toArray(new Integer[0]);
-		Arrays.sort(sortedindexAndTreeInfo);
 		
 		return sortedindexAndTreeInfo;
 	}
@@ -301,15 +319,21 @@ public class SearchTreeSL {
 		//获取相交节点最多，连接成本最小的，节点索引index
 		int index=0,minindex=0,cost,mincost = Integer.MAX_VALUE;
 		
-		// Integer(32): 该节点树的个数(16 bit)-该节点的索引index(16 bit)
-		int length= sortedindexAndTreeInfo.length;
-		for(int i=length-1;i >=0 ; i--){
-			index = (sortedindexAndTreeInfo[i]<<16)>>>16;
+		// sortedindexAndTreeInfo 只记录可以提供最多消费节点的 链路网络节点的index
+		for(int i=0; i<sortedindexAndTreeInfo.length; i++){
+			index = sortedindexAndTreeInfo[i];
 			cost = getLinkCostByTrees(index, canoptimizeTree.get(index));
 			if (cost < mincost) {
 				mincost = cost;
 				minindex = index;
 			}
+		}
+		
+		Iterator<SearchTreeSL> iterator = canoptimizeTree.get(minindex).iterator();
+		SearchTreeSL optimizeTree;
+		while(iterator.hasNext()){
+			optimizeTree = iterator.next();
+			optimizeTree.setServerNode(optimizeTree.getNode(minindex));			
 		}
 		
 		return minindex;
@@ -319,13 +343,9 @@ public class SearchTreeSL {
 		int sum=0;
 		Iterator<SearchTreeSL> iterator = trees.iterator();
 		SearchTreeSL tTree;
-		ArrayList<Node> treeindexs;
 		while (iterator.hasNext()) {
 			tTree = iterator.next();
-			treeindexs = tTree.getTreeNodes();
-			int percost = treeindexs.get(treeindexs.indexOf(new Node(linkNetGraph.getVertex(nodeIndex)))).getCost();
-			sum += tTree.consumeNode.bandwidthNeed * percost;
-			
+			sum += tTree.consumeNode.bandwidthNeed * tTree.getNode(nodeIndex).getCost();
 		}
 		return sum;
 	}
@@ -368,8 +388,7 @@ public class SearchTreeSL {
 	
 	public static String getPathFromIndex(int index, SearchTreeSL tree) {
 		StringBuilder sb = new StringBuilder();
-		Node t = new Node(linkNetGraph.getVertex(index));
-		t = tree.getTreeNodes().get(tree.getTreeNodes().indexOf(t));
+		Node t = tree.getNode(index);
 		while (t!= null) {
 			sb.append(t.getVertexIndex() + " ");
 			t = t.getParent();
