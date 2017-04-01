@@ -120,6 +120,27 @@ public class Graph {
 		clearVertexVisited();
 	}
 	
+	public void showGraphDFS(int vertexIndex){
+		/*
+		 * 递归形式深度优先遍历图
+		 */
+		if(linkTables.length<1 || vertexIndex > linkTables.length-1)
+			return;
+		
+		Vertex vertex = linkTables[vertexIndex].getStartVertex();
+		vertex.setVisited(true);
+		/**深度优先遍历图，访问代码在此处**/
+		System.out.print(vertex.index + " ");
+		
+		for(Edge edge:linkTables[vertexIndex].getAdjEdges()){
+			if(!edge.getEndVertex().isVisited()){
+				showGraphDFS(edge.getEndVertex().index);
+			}
+		}
+
+		clearVertexVisited();
+	}
+	
 	public void clearVertexVisited(){
 		for(int i=0;i<linkTables.length;i++){
 			linkTables[i].getStartVertex().clearVisited();

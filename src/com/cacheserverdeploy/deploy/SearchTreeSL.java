@@ -72,22 +72,9 @@ public class SearchTreeSL {
 			}
 		});
 		
-//		if (root != null ) {
-//			Node child = root.getFirstChild();
-//			if (child != null) {
-//				Node sibling;
-//				linkNetGraph.addBandwidth(child.getVertexIndex(), root.getVertexIndex(), consumeNode.bandwidthNeed);
-//				
-//				while ((sibling =child.getNextSlibing()) != null) {
-//					linkNetGraph.addBandwidth(sibling.getVertexIndex(), root.getVertexIndex(), consumeNode.bandwidthNeed);
-//					child = sibling;
-//				}
-//			}
-//			restoreTreeLinkNet(root.getFirstChild());
-//			restoreTreeLinkNet(root.getNextSlibing());
-//		}
 	
 	}
+	
 	
 	public void cutdownPathBandwidth(){
 		/** 将linkNetGraph 中从服务器节点到消费节点的连路上 bandwidthNeed 减掉  **/
@@ -260,6 +247,14 @@ public class SearchTreeSL {
 
 	}
 	
+	public static ArrayList<ConsumeNode> getNoOptimizeConsumeNodeList(){
+		return noOptimizeConsumeNodeList;
+	}
+	
+	public static ArrayList<SearchTreeSL>  getOptimizeTrees(){
+		return optimizeTrees;
+	}
+	
 	public static ArrayList<String> deploySLTree(){
 		
 		ArrayList<SearchTreeSL> allSLTree = new ArrayList<>();
@@ -282,6 +277,8 @@ public class SearchTreeSL {
 		
 		return allTrees22Part(allSLTree);
 	}
+	
+	
 	
 	public static ArrayList<String> allTrees22Part(ArrayList<SearchTreeSL> allTrees) {
 		//将所有树分成两部分，一部分可以优化，一部分不可以优化
